@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚡ Stigdiv — Multi-Agent Financial Intelligence & Signal Divergence Engine
+# Stigdiv — Multi-Agent Financial Intelligence & Signal Divergence Engine
 
 **An autonomous multi-agent equity research platform combining institutional market data, real-time news catalysts, and retail trader sentiment to uncover signal divergence.**
 
@@ -16,19 +16,19 @@
 
 ---
 
-## 📖 Overview
+## Overview
 
-**Stigdiv** (*Signal Divergence*) is an institutional-grade stock intelligence platform designed to cut through the noise of financial markets. Rather than relying on simple price metrics or LLM hallucinations, Stigdiv deploys a coordinated swarm of specialized autonomous agents that cross-examine:
+Stigdiv (Signal Divergence) is an institutional-grade stock intelligence platform designed to cut through the noise of financial markets. Rather than relying on simple price metrics or LLM hallucinations, Stigdiv deploys a coordinated swarm of specialized autonomous agents that cross-examine:
 
-1. **📈 Quantitative Market Dynamics**: OHLCV price series, moving averages (SMA 50/200), historical ranges, and fundamental valuation multiples.
-2. **📰 Tier-1 Institutional News**: Real-time coverage from Bloomberg, Reuters, CNBC, Seeking Alpha, Motley Fool, MarketWatch, and Google News RSS.
-3. **💬 Retail & Trader Sentiment**: Live trader streams from StockTwits, multi-subreddit discussions (`r/wallstreetbets`, `r/stocks`, `r/investing`), and Hacker News.
+1. **Quantitative Market Dynamics**: OHLCV price series, moving averages (SMA 50/200), historical ranges, and fundamental valuation multiples.
+2. **Tier-1 Institutional News**: Real-time coverage from Bloomberg, Reuters, CNBC, Seeking Alpha, Motley Fool, MarketWatch, and Google News RSS.
+3. **Retail & Trader Sentiment**: Live trader streams from StockTwits, multi-subreddit discussions (`r/wallstreetbets`, `r/stocks`, `r/investing`), and Hacker News.
 
 A **Lead Intelligence Supervisor** synthesizes these streams, evaluates whether signals are **ALIGNED**, **MIXED**, or **DIVERGENT**, and delivers actionable insights in plain, professional financial English.
 
 ---
 
-## 🏛️ System Architecture
+## System Architecture
 
 ```mermaid
 graph TD
@@ -39,41 +39,41 @@ graph TD
     Router -->|Intent: Clarify| Clarify[Clarification Node]
     
     subgraph Multi-Agent Swarm
-        Parallel --> MarketAgent[📊 Market Agent\n• yfinance OHLCV\n• Fundamentals & P/E\n• 52W Range & SMA]
-        Parallel --> NewsAgent[📰 News Agent\n• Institutional Feeds\n• Google News RSS\n• Firecrawl Deep Web]
-        Parallel --> SocialAgent[💬 Social Agent\n• StockTwits Live Stream\n• Reddit WSB/Stocks\n• Hacker News]
+        Parallel --> MarketAgent[Market Agent\n- yfinance OHLCV\n- Fundamentals & P/E\n- 52W Range & SMA]
+        Parallel --> NewsAgent[News Agent\n- Institutional Feeds\n- Google News RSS\n- Firecrawl Deep Web]
+        Parallel --> SocialAgent[Social Agent\n- StockTwits Live Stream\n- Reddit WSB/Stocks\n- Hacker News]
     end
     
-    MarketAgent --> Supervisor[🧠 Lead Intelligence Supervisor]
+    MarketAgent --> Supervisor[Lead Intelligence Supervisor]
     NewsAgent --> Supervisor
     SocialAgent --> Supervisor
     
-    Supervisor -->|Classify Divergence & Synthesize| Save[💾 Memory & Report Store]
-    Save --> Stream[⚡ Real-Time Streaming UI & Citations]
+    Supervisor -->|Classify Divergence & Synthesize| Save[Memory & Report Store]
+    Save --> Stream[Real-Time Streaming UI & Citations]
     Stream --> User
 ```
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-### 1. 🧠 Multi-Agent Swarm Intelligence
+### 1. Multi-Agent Swarm Intelligence
 - **Dynamic Routing**: Dispatches parallel agents based on user intent (e.g. specialized single-agent briefings vs. full 3-agent divergence reports).
 - **Signal Divergence Engine**: Accurately classifies multi-stream consensus as `ALIGNED`, `MIXED`, or `DIVERGENT`.
 
-### 2. 🔍 Deep Financial Research
+### 2. Deep Financial Research
 - **Institutional News**: Live ticker news from Bloomberg, Reuters, Seeking Alpha, CNBC, Motley Fool, and Yahoo Finance.
 - **Retail Trader Flow**: StockTwits sentiment tags (`Bullish` / `Bearish`), Reddit upvote metrics, and community discussion themes.
 - **Fundamental Ratios**: Market Cap, Trailing & Forward P/E, 52-Week High/Low, 50/200 Day Averages, and Analyst Consensus Targets.
 
-### 3. 📅 Natural Language Timeframe Resolution
+### 3. Natural Language Timeframe Resolution
 - Handles flexible natural language queries:
-  - `"research NVDA"` → `5d` short-term momentum
-  - `"show 6 months chart of Apple"` → `6mo` trend
-  - `"full years stock data of Tesla"` → `1y` timeline with weekly candles
+  - `"research NVDA"` -> `5d` short-term momentum
+  - `"show 6 months chart of Apple"` -> `6mo` trend
+  - `"full years stock data of Tesla"` -> `1y` timeline with weekly candles
   - Supports `1mo`, `3mo`, `6mo`, `1y`, `2y`, `5y`, `ytd`, and `max`.
 
-### 4. 🎨 Modern Editorial Frontend
+### 4. Modern Editorial Frontend
 - **Framework**: Built with React 18, TypeScript, and Vite.
 - **Minimalist Aesthetic**: Dark-mode glassmorphism, responsive dock, and no clutter.
 - **Typography**: Google Fonts (`Plus Jakarta Sans` for UI, `Inter` for body text, `JetBrains Mono` for financials).
@@ -83,13 +83,13 @@ graph TD
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Backend
 - **Core**: Python 3.10+, FastAPI, Uvicorn
 - **Orchestration**: LangGraph, Pydantic v2
 - **Data Providers**: `yfinance`, `feedparser`, `requests`, `firecrawl-py`
-- **LLM Providers**: Multi-provider support for **Gemini 2.0 / 1.5**, **Groq (Llama 3.3 / Mixtral)**, **OpenRouter**, or deterministic offline fallbacks.
+- **LLM Providers**: Multi-provider support for Gemini 2.0 / 1.5, Groq (Llama 3.3 / Mixtral), OpenRouter, or deterministic offline fallbacks.
 
 ### Frontend
 - **Framework**: React 18, Vite 5, TypeScript
@@ -100,7 +100,7 @@ graph TD
 
 ---
 
-## 🚀 Quickstart Guide
+## Quickstart Guide
 
 ### Prerequisites
 - Python 3.10+
@@ -147,7 +147,7 @@ cd ..
 
 ---
 
-## 🖥️ Running Locally
+## Running Locally
 
 ### Option A: Complete App via FastAPI (Single Server)
 ```bash
@@ -168,7 +168,7 @@ Open **`http://localhost:3000`** (Vite automatically proxies `/chat` to the back
 
 ---
 
-## 📡 API Reference
+## API Reference
 
 ### `POST /chat`
 Execute a multi-agent equity research request or follow-up conversation.
@@ -223,7 +223,7 @@ Verify server and agent pipeline health status.
 
 ---
 
-## 🧪 Testing & Validation
+## Testing & Validation
 
 The project includes an extensive test suite covering unit tests, stress testing, agent mocking, API endpoints, and graph routing:
 
@@ -236,7 +236,7 @@ pytest -v
 
 ---
 
-## 🐳 Docker Deployment
+## Docker Deployment
 
 The application includes a production-ready Dockerfile:
 
@@ -250,12 +250,12 @@ docker run -p 8000:8000 --env-file .env stigdiv:latest
 
 ---
 
-## ⚠️ Disclaimer
+## Disclaimer
 
-*This software is an automated research and educational tool. The intelligence summaries, divergence metrics, and market data provided by Stigdiv do **not** constitute financial, investment, or legal advice. Always conduct your own independent due diligence.*
+*This software is an automated research and educational tool. The intelligence summaries, divergence metrics, and market data provided by Stigdiv do not constitute financial, investment, or legal advice. Always conduct your own independent due diligence.*
 
 ---
 
-## 📄 License
+## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+MIT License.
