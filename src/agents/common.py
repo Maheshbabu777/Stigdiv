@@ -405,6 +405,67 @@ def extract_time_period(message: str) -> tuple[str, str]:
     """Parse a user message for a time range and return *(yfinance_period, interval)*."""
     lower = message.lower()
 
+    # 1. Lifetime, IPO, Inception, All-time, or Since Listing
+    if any(
+        p in lower
+        for p in (
+            "from the time that company listed",
+            "from the time the company listed",
+            "from the time it listed",
+            "from the time of listing",
+            "time that company listed",
+            "time company listed",
+            "since listing",
+            "since listed",
+            "since it listed",
+            "since it was listed",
+            "from listing",
+            "from its listing",
+            "since being listed",
+            "since ipo",
+            "from ipo",
+            "since its ipo",
+            "post ipo",
+            "since inception",
+            "from inception",
+            "inception to date",
+            "since the beginning",
+            "from the beginning",
+            "since the start",
+            "from the start",
+            "since start",
+            "from start",
+            "since day 1",
+            "since day one",
+            "from day 1",
+            "from day one",
+            "all time",
+            "all-time",
+            "alltime",
+            "entire lifetime",
+            "full lifetime",
+            "entire history",
+            "full history",
+            "complete history",
+            "all price data",
+            "entire price data",
+            "full price data",
+            "max",
+            "maximum",
+        )
+    ) or re.search(r"\b(listed in the market|since (it )?got listed|listed on (the )?exchange|listed on market|all[\s-]?time|inception)\b", lower):
+        return ("max", "1mo")
+
+    # 2. Multi-year lookbacks
+    if any(p in lower for p in ("10 years", "10 year", "10 yrs", "10yr", "past 10 years", "last 10 years", "decade")):
+        return ("10y", "1mo")
+
+    if any(p in lower for p in ("5 years", "5 year", "5 yrs", "5yr", "past 5 years", "last 5 years")):
+        return ("5y", "1mo")
+
+    if any(p in lower for p in ("2 years", "2 year", "2 yrs", "2yr", "past 2 years", "last 2 years")):
+        return ("2y", "1wk")
+
     if any(p in lower for p in ("last year's to till date", "last year to till date", "last year to date", "last year till date", "last year to now", "last year till now")):
         return ("2y", "1wk")
 
@@ -425,9 +486,6 @@ def extract_time_period(message: str) -> tuple[str, str]:
 
     if any(p in lower for p in ("last week", "past week", "previous week", "one week", "1 week", "weekly", "5d", "5 days")):
         return ("5d", "1d")
-
-    if re.search(r"\b(max|all[\s-]?time|overall|entire history|full history)\b", lower):
-        return ("max", "1mo")
 
     match = re.search(r"(\d+)\s*(days?|d|weeks?|w|months?|mo|m|years?|yr|y)\b", lower)
     if match:
