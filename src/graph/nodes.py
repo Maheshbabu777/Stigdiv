@@ -86,7 +86,32 @@ def general_node(state: dict) -> dict:
     live_news_context = ""
     is_identity = _is_simple_identity_or_greeting(query)
 
-    if not note and not is_identity and state.get("use_live_data", True):
+    # Check for direct standalone historical investment calculation
+    from src.graph.router import _looks_like_investment_calculation
+    from src.agents.market_agent import calculate_historical_investment
+    from src.agents.common import resolve_stock_identity
+
+    year, amount = _looks_like_investment_calculation(query)
+    inv_calc = None
+    if year:
+        identity = resolve_stock_identity(query)
+        target_ticker = identity.get("ticker")
+        if target_ticker:
+            inv_calc = calculate_historical_investment(target_ticker, year, amount or 500.0)
+            if not inv_calc.get("error"):
+                live_news_context += (
+                    f"\nHISTORICAL INVESTMENT CALCULATION ({inv_calc['ticker']}):\n"
+                    f"- Starting Year: {inv_calc['start_year']} ({inv_calc['start_date']})\n"
+                    f"- Initial Investment: ${inv_calc['initial_amount']:.2f}\n"
+                    f"- Historical Split-Adjusted Share Price: ${inv_calc['start_price']:.2f}\n"
+                    f"- Current Share Price: ${inv_calc['current_price']:.2f} ({inv_calc['current_date']})\n"
+                    f"- Total Appreciation: +{inv_calc['total_return_pct']:.2f}% ({inv_calc['multiplier']:.2f}x return)\n"
+                    f"- Total Current Portfolio Value: ${inv_calc['final_value']:.2f}\n"
+                    f"- Net Profit: +${inv_calc['profit']:.2f}\n"
+                    f"- Compound Annual Growth Rate (CAGR): {inv_calc['cagr_pct']:.2f}% over {inv_calc['holding_years']} years\n"
+                )
+
+    if not note and not is_identity and not inv_calc and state.get("use_live_data", True):
         topic = _extract_clean_search_topic(query)
         if topic and len(topic) >= 3:
             news_data = fetch_news(topic, limit=4)
@@ -116,9 +141,10 @@ def general_node(state: dict) -> dict:
             "1. NEVER start responses with greetings like 'Hello again', 'Hello, I am the Signal Divergence Agent', 'Welcome', or any preamble.\n"
             "2. Start your response directly with the core insight and analysis.\n"
             "3. If asked who you are or what you do, concisely explain that you are the Signal Divergence Agent equipped with multi-agent market, news, and social intelligence tools.\n"
-            "4. For financial, macroeconomic, asset class, or bond/gold/crypto topics, provide a well-structured, comprehensive, and balanced analysis.\n"
-            "5. Use the live news and intelligence context provided below to reference current yields, rates, or market developments where relevant.\n"
-            "6. Use clear Markdown formatting with headers, bullet points, pros/cons, and risks.\n\n"
+            "4. If historical investment calculation data is provided below, lead directly with the exact calculated dollar value, profit, and CAGR breakdown before providing any context.\n"
+            "5. For financial, macroeconomic, asset class, or bond/gold/crypto topics, provide a well-structured, comprehensive, and balanced analysis.\n"
+            "6. Use the live news and intelligence context provided below to reference current yields, rates, or market developments where relevant.\n"
+            "7. Use clear Markdown formatting with headers, bullet points, pros/cons, and risks.\n\n"
             f"{live_news_context}\n\n"
             f"Active Session Previous Reports:\n{all_reports}\n\n"
             f"Conversation History:\n{history_context}\n\n"
@@ -126,7 +152,17 @@ def general_node(state: dict) -> dict:
         )
         response = get_llm().generate(prompt, task="general_chat").text
     else:
-        if is_identity:
+        if inv_calc and not inv_calc.get("error"):
+            response = (
+                f"If you had invested ${inv_calc['initial_amount']:.2f} in {inv_calc['ticker']} around {inv_calc['start_year']}, "
+                f"your investment would be worth approximately **${inv_calc['final_value']:.2f}** today.\n\n"
+                f"- **Initial Investment**: ${inv_calc['initial_amount']:.2f} (Share price: ~${inv_calc['start_price']:.2f} in {inv_calc['start_year']})\n"
+                f"- **Current Value**: ${inv_calc['final_value']:.2f} (Share price: ~${inv_calc['current_price']:.2f})\n"
+                f"- **Net Profit**: +${inv_calc['profit']:.2f}\n"
+                f"- **Total Return**: +{inv_calc['total_return_pct']:.2f}% ({inv_calc['multiplier']:.2f}x growth)\n"
+                f"- **Annualized Return (CAGR)**: {inv_calc['cagr_pct']:.2f}% over {inv_calc['holding_years']} years"
+            )
+        elif is_identity:
             response = (
                 "I am the **Signal Divergence Agent**, a specialized multi-agent stock research assistant. "
                 "I analyze real-time market data, financial news, and social sentiment to detect signal divergence. "
@@ -290,6 +326,31 @@ def recall_node(state: dict) -> dict:
         advice_note = (
             " I cannot tell you whether to buy or sell, but I can explain what the saved signals imply."
         )
+
+    # Check for historical investment calculation (e.g. $500 invested in 2016)
+    from src.graph.router import _looks_like_investment_calculation
+    from src.agents.market_agent import calculate_historical_investment
+
+    year, amount = _looks_like_investment_calculation(question)
+    inv_calc = None
+    inv_context = ""
+    ticker = target_report.get("ticker")
+
+    if ticker and year:
+        inv_calc = calculate_historical_investment(ticker, year, amount or 500.0)
+        if not inv_calc.get("error"):
+            inv_context = (
+                f"\nHISTORICAL INVESTMENT CALCULATION ({inv_calc['ticker']}):\n"
+                f"- Starting Year: {inv_calc['start_year']} ({inv_calc['start_date']})\n"
+                f"- Initial Investment: ${inv_calc['initial_amount']:.2f}\n"
+                f"- Historical Split-Adjusted Share Price: ${inv_calc['start_price']:.2f}\n"
+                f"- Current Share Price: ${inv_calc['current_price']:.2f} ({inv_calc['current_date']})\n"
+                f"- Total Appreciation: +{inv_calc['total_return_pct']:.2f}% ({inv_calc['multiplier']:.2f}x return)\n"
+                f"- Total Current Portfolio Value: ${inv_calc['final_value']:.2f}\n"
+                f"- Net Profit: +${inv_calc['profit']:.2f}\n"
+                f"- Compound Annual Growth Rate (CAGR): {inv_calc['cagr_pct']:.2f}% over {inv_calc['holding_years']} years\n"
+            )
+
     if state.get("use_llm", True):
         history_context = format_chat_for_prompt(session_id, limit=15)
         prompt = (
@@ -305,9 +366,11 @@ def recall_node(state: dict) -> dict:
             f"- News Sentiment [{target_report.get('news_sentiment')}]: {target_report.get('news_summary')}\n"
             f"- Social Sentiment [{target_report.get('social_sentiment')}]: {target_report.get('social_summary')}\n"
             f"- Divergence Verdict: {target_report.get('divergence_verdict')}\n\n"
+            f"{inv_context}\n\n"
             f"Recent Conversation History:\n{history_context}\n\n"
             f"User Follow-up: {question}\n\n"
             "Guidelines:\n"
+            "- If historical investment calculation data is provided above, lead directly with the exact calculated dollar value, profit, and CAGR breakdown before providing any context.\n"
             "- Answer the user's question directly, insightfully, and conversationally.\n"
             "- If the user asks about a specific company analyzed previously in this session, use its report.\n"
             "- Reference the specific context from the stored research and conversation.\n"
@@ -315,14 +378,25 @@ def recall_node(state: dict) -> dict:
         )
         response = get_llm().generate(prompt, task="recall").text
     else:
-        response = (
-            f"From the current session report, {target_report.get('topic', 'the last topic')} "
-            f"had a {target_report.get('divergence_verdict', 'mixed')} verdict.{advice_note} "
-            f"News was labeled {target_report.get('news_sentiment', 'neutral')}, "
-            f"market was labeled {target_report.get('market_trend', 'unavailable')}, "
-            f"and social was labeled {target_report.get('social_sentiment', 'neutral')}. "
-            "That is why the saved report did not treat all signals as fully aligned."
-        )
+        if inv_calc and not inv_calc.get("error"):
+            response = (
+                f"If you had invested ${inv_calc['initial_amount']:.2f} in {target_report.get('topic', ticker)} around {inv_calc['start_year']}, "
+                f"your investment would be worth approximately **${inv_calc['final_value']:.2f}** today.\n\n"
+                f"- **Initial Investment**: ${inv_calc['initial_amount']:.2f} (Share price: ~${inv_calc['start_price']:.2f} in {inv_calc['start_year']})\n"
+                f"- **Current Value**: ${inv_calc['final_value']:.2f} (Share price: ~${inv_calc['current_price']:.2f})\n"
+                f"- **Net Profit**: +${inv_calc['profit']:.2f}\n"
+                f"- **Total Return**: +{inv_calc['total_return_pct']:.2f}% ({inv_calc['multiplier']:.2f}x growth)\n"
+                f"- **Annualized Return (CAGR)**: {inv_calc['cagr_pct']:.2f}% over {inv_calc['holding_years']} years"
+            )
+        else:
+            response = (
+                f"From the current session report, {target_report.get('topic', 'the last topic')} "
+                f"had a {target_report.get('divergence_verdict', 'mixed')} verdict.{advice_note} "
+                f"News was labeled {target_report.get('news_sentiment', 'neutral')}, "
+                f"market was labeled {target_report.get('market_trend', 'unavailable')}, "
+                f"and social was labeled {target_report.get('social_sentiment', 'neutral')}. "
+                "That is why the saved report did not treat all signals as fully aligned."
+            )
 
     _record_turn_and_compress(session_id, question, response, llm=_llm_or_none(state))
 

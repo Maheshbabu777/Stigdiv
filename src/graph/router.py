@@ -134,6 +134,7 @@ def _llm_tool_decision(query: str, latest: dict | None) -> dict:
         "   - If user asks to research/analyze a company or check signal divergence (e.g. 'Research TSLA', 'Analyze Ola Electric', 'Tata Motors'): action='stock_research', agents=['news', 'market', 'social'].\n"
         "3. Session Follow-up Questions:\n"
         "   - If user asks follow-up questions referencing previous analysis (e.g. 'Why was it divergent?', 'Explain the news score'): action='recall'.\n"
+        "   - If user asks hypothetical investment, profit, or backtest questions on the previous stock (e.g. 'if i have invested in this around 2016 with $500 how much it would be now?', 'what if i invested 1000 in 2020?'): action='recall'.\n"
         "4. Macro / Commodity / Conceptual Questions:\n"
         "   - If user asks about gold, bonds, crypto, real estate, macroeconomics, or general investing: action='chat'.\n"
         "5. Session Timeframe / Follow-up Data Requests:\n"
@@ -231,6 +232,31 @@ def _looks_like_social_only_request(query: str) -> bool:
     return any(p in lower for p in ("reddit", "stocktwits", "social sentiment", "retail sentiment", "what are people saying", "what is retail saying"))
 
 
+def _looks_like_investment_calculation(query: str) -> tuple[int | None, float | None]:
+    lower = query.lower()
+    has_invest = any(w in lower for w in ("invested", "bought", "invest", "buy", "holding", "put in", "allocated", "investment"))
+    has_return = any(w in lower for w in ("how much", "what would", "value now", "worth now", "be now", "return", "returns", "profit", "grew to", "growth", "become"))
+    if not (has_invest and has_return):
+        return None, None
+
+    year_match = re.search(r"\b(19\d\d|20[0-2]\d)\b", query)
+    year = int(year_match.group(1)) if year_match else None
+
+    # Amount extraction
+    amount = 500.0
+    amount_match = re.search(r"(\$|₹|rs\.?|usd)?\s*(\d+(?:,\d+)*(?:\.\d+)?)\s*(\$|₹|rs\.?|usd)?", query, re.I)
+    if amount_match:
+        raw_val = amount_match.group(2).replace(",", "")
+        try:
+            val = float(raw_val)
+            if val > 0 and (val != year or not year_match):
+                amount = val
+        except ValueError:
+            pass
+
+    return year, amount
+
+
 def _looks_like_recall_question(query: str) -> bool:
     lower = query.lower().strip()
     followup_words = (
@@ -240,6 +266,21 @@ def _looks_like_recall_question(query: str) -> bool:
         "you said",
         "that report",
         "this report",
+        "in this",
+        "about this",
+        "for this",
+        "of this",
+        "invested in this",
+        "if i invested",
+        "if i had invested",
+        "if i have invested",
+        "if i bought",
+        "if i had bought",
+        "how much would it be",
+        "how much it would be",
+        "what would it be",
+        "what would it be worth",
+        "worth now",
         "why was it",
         "why is it",
         "why is there",
@@ -270,8 +311,14 @@ def _looks_like_recall_question(query: str) -> bool:
         return False
     if any(word in lower for word in followup_words):
         return True
+    
+    # Check if hypothetical investment query
+    year, _ = _looks_like_investment_calculation(query)
+    if year is not None:
+        return True
+
     if lower.startswith(("why ", "how ", "explain ")) and any(
-        word in lower for word in ("divergence", "divergent", "signal", "signals", "buy", "sell", "hold")
+        word in lower for word in ("divergence", "divergent", "signal", "signals", "buy", "sell", "hold", "much", "worth")
     ):
         return True
     return False

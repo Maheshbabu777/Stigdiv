@@ -176,3 +176,62 @@ def summarize_market(data: dict[str, Any], llm: LLMClient | None = None) -> dict
     )
     result = llm.generate(prompt, task="market_summary")
     return {"summary": result.text or deterministic, "trend": trend, "raw": data}
+
+
+def calculate_historical_investment(ticker: str, start_year: int, initial_amount: float = 500.0) -> dict[str, Any]:
+    """Calculate the historical return, compounding CAGR, and current value of an investment."""
+    if not ticker:
+        return {"error": "No ticker provided."}
+    try:
+        import yfinance as yf
+        from datetime import datetime
+
+        ticker_obj = yf.Ticker(ticker)
+        hist = ticker_obj.history(start=f"{start_year}-01-01", interval="1mo")
+        if hist.empty:
+            hist = ticker_obj.history(period="max", interval="1mo")
+        if hist.empty:
+            return {"error": f"No historical price series available for {ticker}."}
+
+        start_price = float(hist.iloc[0]["Close"])
+        start_date = str(hist.index[0].date())
+
+        current_price = float(hist.iloc[-1]["Close"])
+        current_date = str(hist.index[-1].date())
+
+        if start_price <= 0:
+            return {"error": "Invalid historical start price."}
+
+        multiplier = current_price / start_price
+        final_value = initial_amount * multiplier
+        profit = final_value - initial_amount
+        total_return_pct = ((current_price - start_price) / start_price) * 100
+
+        try:
+            start_dt = datetime.strptime(start_date[:10], "%Y-%m-%d")
+            current_dt = datetime.strptime(current_date[:10], "%Y-%m-%d")
+            years = max(1.0, (current_dt - start_dt).days / 365.25)
+        except Exception:
+            years = max(1.0, float(datetime.now().year - start_year))
+
+        cagr = ((multiplier ** (1.0 / years)) - 1.0) * 100
+
+        return {
+            "ticker": ticker,
+            "start_year": start_year,
+            "start_date": start_date,
+            "start_price": round(start_price, 2),
+            "current_date": current_date,
+            "current_price": round(current_price, 2),
+            "initial_amount": round(initial_amount, 2),
+            "final_value": round(final_value, 2),
+            "profit": round(profit, 2),
+            "total_return_pct": round(total_return_pct, 2),
+            "cagr_pct": round(cagr, 2),
+            "holding_years": round(years, 1),
+            "multiplier": round(multiplier, 2),
+            "error": None,
+        }
+    except Exception as exc:
+        logger.debug("Investment calculation failed for %s (%s): %s", ticker, start_year, exc)
+        return {"error": str(exc)}
